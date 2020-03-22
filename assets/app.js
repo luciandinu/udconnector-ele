@@ -81,7 +81,7 @@ function udPasteElement(udAction) {
         if (JSON.parse(atob(clipText).trim(" "))) {
           var clipObj = JSON.parse(atob(clipText).trim(" "));
           //if (clipObj.elementor) {
-            insertElement(clipObj);
+          insertElement(clipObj, udAction);
           //}
         }
       })
@@ -91,45 +91,68 @@ function udPasteElement(udAction) {
   }
 }
 
-function insertElement(udElement) {
+function insertElement(udElement, udAction) {
   //console.log(udElement);
-  var foundNodes = _searchTree(udElement, function(oNode){ if(oNode["widgetType"] === "image") return true; }, false);
-  console.log(foundNodes);
+  var foundNodes = _searchTree(
+    udElement,
+    function(oNode) {
+      if (oNode["widgetType"] === "image") return true;
+    },
+    false
+  );
+  //console.log(foundNodes);
 
   //Prepare the object array with the images to be uploaded
   var uploadImages = [];
-  foundNodes.forEach(function(nodeFound){
+  foundNodes.forEach(function(nodeFound) {
     var convImage = {
-      id : nodeFound.settings.image.id, //Get the id from Elementor
+      id: nodeFound.settings.image.id, //Get the id from Elementor
       url: nodeFound.settings.image.url //Get the url from Elementor
-    }
+    };
     uploadImages.push(convImage);
   });
 
   //Make the ajax call to upload images
-  jQuery.ajax({
-    url: ajaxurl,
-    type: "POST",
-    dataType: "json",
-    data: {
-      action: "upload_images_to_wp",
-      images: JSON.stringify(uploadImages)
-    },
-    success: function(obj) {
-      returnData = obj;
-      console.log(returnData);
-    }
-  });
+  if (uploadImages.length > 0) {
+    jQuery.ajax({
+      url: ajaxurl,
+      type: "POST",
+      dataType: "json",
+      data: {
+        action: "upload_images_to_wp",
+        images: JSON.stringify(uploadImages)
+      },
+      success: function(obj) {
+        returnData = obj;
 
+        returnData.forEach(function(newEl) {
+          foundNodes.forEach(function(nodeFound) {
+            if (nodeFound.settings.image.id == newEl.id) {
+              nodeFound.settings.image.id = newEl.new_id;
+              nodeFound.settings.image.url = newEl.new_url;
+            }
+          });
+        });
+        elementorCommon.storage.set("clipboard", udElement);
+        udPasteElementorCommand(udAction);
+      }
+    });
+  } else {
+    elementorCommon.storage.set("clipboard", udElement);
+    udPasteElementorCommand(udAction);
+  }
+}
+
+function udPasteElementorCommand(udAction) {
   //Paste the element
-  // if (udAction.name) {
-  //   $e.run("document/ui/paste");
-  // } else {
-  //   $e.run("document/ui/paste", {
-  //     container: elementor.getPreviewContainer(),
-  //     at: elementor.getCurrentElement()
-  //   });
-  // }
+  if (udAction.name) {
+    $e.run("document/ui/paste");
+  } else {
+    $e.run("document/ui/paste", {
+      container: elementor.getPreviewContainer(),
+      at: elementor.getCurrentElement()
+    });
+  }
 }
 
 function udRegisterPasteActionInElementor(groups, element) {

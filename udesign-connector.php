@@ -63,26 +63,58 @@ class UDesign_Connector_Elementor
   function upload_images_to_wp(){
 
     $img_array =  json_decode(stripslashes($_POST['images']));
-    
+    $new_images = array();
+
     //Return something
     //echo json_encode($results);
     //$results = "GIGI";
 
-    global $wpdb; //Global WPDB
-    $vars = array();
-
-    // $query = '';
-    // $query .= "SELECT post_id ";
-    // $query .= "FROM " . $wpdb->posts;
-    
-
     foreach ($img_array as &$img_object) {
-      //Upload if necessary 
-      //media_sideload_image()
+      $args = array(
+        'post_type' => 'attachment',
+        'post_mime_type' => 'image',
+        'post_status' => 'inherit',
+        'posts_per_page' => -1,
+        'meta_query' => array(
+          array(
+            'key' => '_ud_original_url',
+            'value' => $img_object->url,
+            'compare' => 'LIKE'
+          )
+        )
+      );
+      $query = new WP_Query( $args );
+      $rows = $query->get_posts();
+
+      //If nothing found we upload the image
+      if (count($rows) == 0){
+        //Add image to media gallery and attach the origin meta
+        $new_image_id = media_sideload_image($img_object->url, null, null, 'id');
+        add_post_meta(  $new_image_id, '_ud_original_url', $img_object->url );
+        //Add the info in the result json
+        $img_object->new_id = $new_image_id;
+        $img_object->new_url = wp_get_attachment_url( $new_image_id, 'original', false );
+      } else {
+      // The Loop
+        foreach ($rows as &$row_object) {
+          // //Add the info in the result jscon
+          $img_object->new_id = $row_object->ID;
+          $img_object->new_url = $row_object->guid;
+        }
+      }
+
     }
 
     echo json_encode($img_array);
     wp_die();
+  }
+
+
+  function get_attachment_id_from_src ($image_src) {
+    global $wpdb;
+    $query = "SELECT ID FROM {$wpdb->posts} WHERE guid='$image_src'";
+    $id = $wpdb->get_var($query);
+    return $id;
   }
 
 
