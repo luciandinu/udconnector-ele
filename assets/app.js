@@ -71,9 +71,6 @@ function RegisterContextMenuActions() {
 }
 
 function udPasteElement(udAction) {
-  //console.log("Paste is here", udAction);
-  //console.log(elementor.getCurrentElement());
-
   if (iCanPaste) {
     navigator.clipboard
       .readText()
@@ -81,7 +78,7 @@ function udPasteElement(udAction) {
         if (JSON.parse(atob(clipText).trim(" "))) {
           var clipObj = JSON.parse(atob(clipText).trim(" "));
           //if (clipObj.elementor) {
-          insertElement(clipObj, udAction);
+          insertElement(clipObj);
           //}
         }
       })
@@ -91,8 +88,9 @@ function udPasteElement(udAction) {
   }
 }
 
-function insertElement(udElement, udAction) {
+function insertElement(udElement) {
   //console.log(udElement);
+
   var foundNodes = _searchTree(
     udElement,
     function(oNode) {
@@ -100,6 +98,7 @@ function insertElement(udElement, udAction) {
     },
     false
   );
+
   //console.log(foundNodes);
 
   //Prepare the object array with the images to be uploaded
@@ -134,24 +133,27 @@ function insertElement(udElement, udAction) {
           });
         });
         elementorCommon.storage.set("clipboard", udElement);
-        udPasteElementorCommand(udAction);
+        udPasteElementorCommand();
       }
     });
   } else {
     elementorCommon.storage.set("clipboard", udElement);
-    udPasteElementorCommand(udAction);
+    udPasteElementorCommand();
   }
 }
 
-function udPasteElementorCommand(udAction) {
+function udPasteElementorCommand() {
   //Paste the element
-  if (udAction.name) {
+  var wt = elementor.getCurrentElement().model.attributes.elType;
+  if (wt == 'section' || wt =='column' ) {
+    console.log('ok - inside');
     $e.run("document/ui/paste");
   } else {
     $e.run("document/ui/paste", {
       container: elementor.getPreviewContainer(),
       at: elementor.getCurrentElement()
     });
+    console.log('ok - outside');
   }
 }
 
