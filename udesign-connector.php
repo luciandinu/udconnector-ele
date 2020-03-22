@@ -65,9 +65,6 @@ class UDesign_Connector_Elementor
     $img_array =  json_decode(stripslashes($_POST['images']));
     $new_images = array();
 
-    //Return something
-    //echo json_encode($results);
-    //$results = "GIGI";
 
     foreach ($img_array as &$img_object) {
       $args = array(
