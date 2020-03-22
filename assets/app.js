@@ -74,15 +74,62 @@ function udPasteElement(udAction) {
   //console.log("Paste is here", udAction);
   //console.log(elementor.getCurrentElement());
 
-  //Paste the element
-  if (udAction.name) {
-    $e.run("document/ui/paste");
-  } else {
-    $e.run("document/ui/paste", {
-      container: elementor.getPreviewContainer(),
-      at: elementor.getCurrentElement()
-    });
+  if (iCanPaste) {
+    navigator.clipboard
+      .readText()
+      .then(function(clipText) {
+        if (JSON.parse(atob(clipText).trim(" "))) {
+          var clipObj = JSON.parse(atob(clipText).trim(" "));
+          //if (clipObj.elementor) {
+            insertElement(clipObj);
+          //}
+        }
+      })
+      .catch(err => {
+        console.log("Something went wrong", err);
+      });
   }
+}
+
+function insertElement(udElement) {
+  //console.log(udElement);
+  var foundNodes = _searchTree(udElement, function(oNode){ if(oNode["widgetType"] === "image") return true; }, false);
+  console.log(foundNodes);
+
+  //Prepare the object array with the images to be uploaded
+  var uploadImages = [];
+  foundNodes.forEach(function(nodeFound){
+    var convImage = {
+      id : nodeFound.settings.image.id, //Get the id from Elementor
+      url: nodeFound.settings.image.url //Get the url from Elementor
+    }
+    uploadImages.push(convImage);
+  });
+
+  //Make the ajax call to upload images
+  jQuery.ajax({
+    url: ajaxurl,
+    type: "POST",
+    dataType: "json",
+    data: {
+      action: "upload_images_to_wp",
+      images: JSON.stringify(uploadImages)
+    },
+    success: function(obj) {
+      returnData = obj;
+      console.log(returnData);
+    }
+  });
+
+  //Paste the element
+  // if (udAction.name) {
+  //   $e.run("document/ui/paste");
+  // } else {
+  //   $e.run("document/ui/paste", {
+  //     container: elementor.getPreviewContainer(),
+  //     at: elementor.getCurrentElement()
+  //   });
+  // }
 }
 
 function udRegisterPasteActionInElementor(groups, element) {
@@ -132,3 +179,46 @@ function iCanPaste() {
       location.hostname == "127.0.0.1")
   );
 }
+
+/**searchs through all arrays of the tree if the for a value from a property
+ * @param aTree : the tree array
+ * @param fCompair : This function will receive each node. It's upon you to define which 
+                     condition is necessary for the match. It must return true if the condition is matched. Example:
+                        function(oNode){ if(oNode["Name"] === "AA") return true; }
+ * @param bGreedy? : us true to do not stop after the first match, default is false
+ * @return an array with references to the nodes for which fCompair was true; In case no node was found an empty array
+ *         will be returned
+*/
+var _searchTree = function(aTree, fCompair, bGreedy) {
+  var aInnerTree = []; // will contain the inner children
+  var oNode; // always the current node
+  var aReturnNodes = []; // the nodes array which will returned
+
+  // 1. loop through all root nodes so we don't touch the tree structure
+  for (keysTree in aTree) {
+    aInnerTree.push(aTree[keysTree]);
+  }
+  while (aInnerTree.length > 0) {
+    oNode = aInnerTree.pop();
+    // check current node
+    if (fCompair(oNode)) {
+      aReturnNodes.push(oNode);
+      if (!bGreedy) {
+        return aReturnNodes;
+      }
+    } else {
+      // if (node.children && node.children.length) {
+      // find other objects, 1. check all properties of the node if they are arrays
+      for (keysNode in oNode) {
+        // true if the property is an array
+        if (oNode[keysNode] instanceof Array) {
+          // 2. push all array object to aInnerTree to search in those later
+          for (var i = 0; i < oNode[keysNode].length; i++) {
+            aInnerTree.push(oNode[keysNode][i]);
+          }
+        }
+      }
+    }
+  }
+  return aReturnNodes; // someone was greedy
+};

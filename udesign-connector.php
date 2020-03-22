@@ -29,14 +29,14 @@ class UDesign_Connector_Elementor
     add_action('init', array($this, 'init'), 11);
     add_action('admin_head',  array($this, 'admin_head'));
 
+    //Register Upload Images Ajax Handler
+    add_action( 'wp_ajax_upload_images_to_wp', array($this,'upload_images_to_wp') );
+
+    //Register frontend scripst
     add_action('elementor/editor/after_enqueue_scripts', function() {
-
       wp_enqueue_style('elementor-editor-udesign', plugin_dir_url(__FILE__) . 'assets/style.css');
-
       wp_enqueue_script('elementor-editor-udesign', plugin_dir_url(__FILE__) . 'assets/app.js', [], '1.0.0', true);
-  
-
-  });
+    });
   }
 
   function init()
@@ -53,6 +53,38 @@ class UDesign_Connector_Elementor
     </style>
     ';
   }
+
+  /*
+  Receive an array of urls
+  Example:  ['https://url1', 'https://url2']
+  Must return an array
+  */
+  //Upload external images to WP
+  function upload_images_to_wp(){
+
+    $img_array =  json_decode(stripslashes($_POST['images']));
+    
+    //Return something
+    //echo json_encode($results);
+    //$results = "GIGI";
+
+    global $wpdb; //Global WPDB
+    $vars = array();
+
+    // $query = '';
+    // $query .= "SELECT post_id ";
+    // $query .= "FROM " . $wpdb->posts;
+    
+
+    foreach ($img_array as &$img_object) {
+      //Upload if necessary 
+      //media_sideload_image()
+    }
+
+    echo json_encode($img_array);
+    wp_die();
+  }
+
 
 }
 
