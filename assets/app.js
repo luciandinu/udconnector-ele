@@ -205,16 +205,6 @@ function refreshTumbnails() {
   });
 }
 
-function getImageSize(nodeFound) {
-  if (nodeFound.settings.image_size == "custom") {
-    return (
-      "custom_" +
-      nodeFound.settings.image_custom_dimension.width +
-      "x" +
-      nodeFound.settings.image_custom_dimension.height
-    );
-  } else return nodeFound.settings.image_size;
-}
 
 function udRegisterPasteActionInElementor(groups, element) {
   //Making sure that where we insert this is the right group
@@ -262,6 +252,17 @@ function iCanPaste() {
       location.hostname == "localhost" ||
       location.hostname == "127.0.0.1")
   );
+}
+
+function getImageSize(nodeFound) {
+  if (nodeFound.settings.image_size == "custom") {
+    return (
+      "custom_" +
+      nodeFound.settings.image_custom_dimension.width +
+      "x" +
+      nodeFound.settings.image_custom_dimension.height
+    );
+  } else return nodeFound.settings.image_size;
 }
 
 /**searchs through all arrays of the tree if the for a value from a property
