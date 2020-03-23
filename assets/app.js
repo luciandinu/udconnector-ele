@@ -96,10 +96,10 @@ function insertElement(udElement) {
     function(oNode) {
       if (oNode["widgetType"] === "image") return true;
     },
-    false
+    true
   );
 
-  //console.log(foundNodes);
+  console.log(foundNodes);
 
   //Prepare the object array with the images to be uploaded
   var uploadImages = [];
@@ -123,7 +123,7 @@ function insertElement(udElement) {
       },
       success: function(obj) {
         returnData = obj;
-
+        //Replace with new urls
         returnData.forEach(function(newEl) {
           foundNodes.forEach(function(nodeFound) {
             if (nodeFound.settings.image.id == newEl.id) {
@@ -132,8 +132,13 @@ function insertElement(udElement) {
             }
           });
         });
+        //Refresh editor thumbnails - we make sure we have all sizes
+        refreshTumbnails();
+        //Set the clipboard storage
         elementorCommon.storage.set("clipboard", udElement);
+        //Paste
         udPasteElementorCommand();
+
       }
     });
   } else {
@@ -155,6 +160,20 @@ function udPasteElementorCommand() {
     });
     console.log('ok - outside');
   }
+}
+
+function refreshTumbnails(){
+  jQuery.ajax({
+    url: ajaxurl,
+    type: "POST",
+    dataType: "json",
+    data: {
+      action: "query-attachments",
+    },
+    success: function(obj) {
+
+    }
+  });
 }
 
 function udRegisterPasteActionInElementor(groups, element) {
