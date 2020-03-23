@@ -35,7 +35,7 @@ class UDesign_Connector_Elementor
     //Register frontend scripst
     add_action('elementor/editor/after_enqueue_scripts', function() {
       wp_enqueue_style('elementor-editor-udesign', plugin_dir_url(__FILE__) . 'assets/style.css');
-      wp_enqueue_script('elementor-editor-udesign', plugin_dir_url(__FILE__) . 'assets/app.js', [], '1.0.0', true);
+      wp_enqueue_script('elementor-editor-udesign', plugin_dir_url(__FILE__) . 'assets/app.js', [], '1.0.1', true);
     });
   }
 
@@ -91,12 +91,14 @@ class UDesign_Connector_Elementor
         //Add the info in the result json
         $img_object->new_id = $new_image_id;
         $img_object->new_url = wp_get_attachment_url( $new_image_id, 'original', false );
+        $img_object->is_first_time = true;
       } else {
       // The Loop
         foreach ($rows as &$row_object) {
           // //Add the info in the result jscon
           $img_object->new_id = $row_object->ID;
           $img_object->new_url = $row_object->guid;
+          $img_object->is_first_time = false;
         }
       }
 

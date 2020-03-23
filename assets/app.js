@@ -78,7 +78,7 @@ function udPasteElement(udAction) {
         if (JSON.parse(atob(clipText).trim(" "))) {
           var clipObj = JSON.parse(atob(clipText).trim(" "));
           //if (clipObj.elementor) {
-          insertElement(clipObj);
+          insertElement(clipObj, udAction);
           //}
         }
       })
@@ -88,7 +88,7 @@ function udPasteElement(udAction) {
   }
 }
 
-function insertElement(udElement) {
+function insertElement(udElement, udAction) {
   //console.log(udElement);
 
   var foundNodes = _searchTree(
@@ -125,19 +125,21 @@ function insertElement(udElement) {
       },
       success: function(obj) {
         returnData = obj;
+        var isFirstTime = false;
         //Replace with new urls
         returnData.forEach(function(newEl) {
           foundNodes.forEach(function(nodeFound) {
             if (nodeFound.settings.image.id == newEl.id) {
               nodeFound.settings.image.id = newEl.new_id;
               nodeFound.settings.image.url = newEl.new_url;
+              isFirstTime = newEl.is_first_time ? true : false;
             }
           });
         });
 
         //Setting up items to be refresh
         var refreshItems = [];
-        returnData.forEach(function(newEl){
+        returnData.forEach(function(newEl) {
           refreshItems.push({
             id: newEl.new_id,
             size: newEl.size,
@@ -152,13 +154,32 @@ function insertElement(udElement) {
           dataType: "json",
           data: {
             action: "elementor_get_images_details",
-            items : refreshItems
+            _nonce: elementorCommon.ajax.getSettings("nonce"),
+            items: refreshItems
           },
           success: function(obj) {
+            console.log(obj);
             //Set the clipboard storage
             elementorCommon.storage.set("clipboard", udElement);
+            //elementorCommon.storage.set("transfer", udElement);
+            //elementor.trigger("request:paste");
+
             //Paste
             udPasteElementorCommand();
+            //udPasteElementorCommand();
+
+            //For the first time we got images register to paste later
+            elementor.channels.editor.bind(
+              "imagesManager:detailsReceived",
+              function() {
+                console.log("==IM manager==:", isFirstTime);
+                if ((udAction || isFirstTime) && foundNodes.length > 0) {
+                  $e.run("document/history/undo"); //Fast Undo
+                  udPasteElementorCommand();
+                }
+                foundNodes = [];
+              }
+            );
           }
         });
       }
@@ -177,7 +198,7 @@ function udPasteElementorCommand() {
     $e.run("document/ui/paste", {
       options: {
         rebuild: true
-      },
+      }
       //onAfter: refreshTumbnails()
     });
   } else {
@@ -186,7 +207,7 @@ function udPasteElementorCommand() {
       at: elementor.getCurrentElement(),
       options: {
         rebuild: true
-      },
+      }
       //onAfter: refreshTumbnails()
     });
     console.log("ok - outside");
@@ -199,12 +220,12 @@ function refreshTumbnails() {
     type: "POST",
     dataType: "json",
     data: {
-      action: "query-attachments"
+      action: "query-attachments",
+      _nonce: elementorCommon.ajax.getSettings("nonce")
     },
     success: function(obj) {}
   });
 }
-
 
 function udRegisterPasteActionInElementor(groups, element) {
   //Making sure that where we insert this is the right group
