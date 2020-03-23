@@ -106,7 +106,9 @@ function insertElement(udElement) {
   foundNodes.forEach(function(nodeFound) {
     var convImage = {
       id: nodeFound.settings.image.id, //Get the id from Elementor
-      url: nodeFound.settings.image.url //Get the url from Elementor
+      url: nodeFound.settings.image.url, //Get the url from Elementor
+      size: getImageSize(nodeFound),
+      is_first_time: true
     };
     uploadImages.push(convImage);
   });
@@ -132,13 +134,33 @@ function insertElement(udElement) {
             }
           });
         });
-        //Refresh editor thumbnails - we make sure we have all sizes
-        refreshTumbnails();
-        //Set the clipboard storage
-        elementorCommon.storage.set("clipboard", udElement);
-        //Paste
-        udPasteElementorCommand();
 
+        //Setting up items to be refresh
+        var refreshItems = [];
+        returnData.forEach(function(newEl){
+          refreshItems.push({
+            id: newEl.new_id,
+            size: newEl.size,
+            is_first_time: newEl.is_first_time
+          });
+        });
+        //Refresh editor thumbnails - we make sure we have all sizes
+        //refreshTumbnails();
+        jQuery.ajax({
+          url: ajaxurl,
+          type: "POST",
+          dataType: "json",
+          data: {
+            action: "elementor_get_images_details",
+            items : refreshItems
+          },
+          success: function(obj) {
+            //Set the clipboard storage
+            elementorCommon.storage.set("clipboard", udElement);
+            //Paste
+            udPasteElementorCommand();
+          }
+        });
       }
     });
   } else {
@@ -150,30 +172,48 @@ function insertElement(udElement) {
 function udPasteElementorCommand() {
   //Paste the element
   var wt = elementor.getCurrentElement().model.attributes.elType;
-  if (wt == 'section' || wt =='column' ) {
-    console.log('ok - inside');
-    $e.run("document/ui/paste");
+  if (wt == "section" || wt == "column") {
+    console.log("ok - inside");
+    $e.run("document/ui/paste", {
+      options: {
+        rebuild: true
+      },
+      //onAfter: refreshTumbnails()
+    });
   } else {
     $e.run("document/ui/paste", {
       container: elementor.getPreviewContainer(),
-      at: elementor.getCurrentElement()
+      at: elementor.getCurrentElement(),
+      options: {
+        rebuild: true
+      },
+      //onAfter: refreshTumbnails()
     });
-    console.log('ok - outside');
+    console.log("ok - outside");
   }
 }
 
-function refreshTumbnails(){
+function refreshTumbnails() {
   jQuery.ajax({
     url: ajaxurl,
     type: "POST",
     dataType: "json",
     data: {
-      action: "query-attachments",
+      action: "query-attachments"
     },
-    success: function(obj) {
-
-    }
+    success: function(obj) {}
   });
+}
+
+function getImageSize(nodeFound) {
+  if (nodeFound.settings.image_size == "custom") {
+    return (
+      "custom_" +
+      nodeFound.settings.image_custom_dimension.width +
+      "x" +
+      nodeFound.settings.image_custom_dimension.height
+    );
+  } else return nodeFound.settings.image_size;
 }
 
 function udRegisterPasteActionInElementor(groups, element) {
