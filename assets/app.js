@@ -165,7 +165,7 @@ function insertElement(udElement, udAction) {
             //elementor.trigger("request:paste");
 
             //Paste
-            udPasteElementorCommand();
+            var newElementsToReRender = udPasteElementorCommand();
             //udPasteElementorCommand();
 
             //For the first time we got images register to paste later
@@ -176,7 +176,8 @@ function insertElement(udElement, udAction) {
                 if ((udAction || isFirstTime) && foundNodes.length > 0) {
                   // $e.run("document/history/undo"); //Fast Undo
                   // udPasteElementorCommand();
-                  elementor.getCurrentElement().render();
+                  //elementor.getCurrentElement().render();
+                  newElementsToReRender.render();
                 }
                 foundNodes = [];
               }
@@ -193,27 +194,40 @@ function insertElement(udElement, udAction) {
 
 function udPasteElementorCommand() {
   //Paste the element
+  var newElements;
   var wt = elementor.getCurrentElement().model.attributes.elType;
   if (wt == "section" || wt == "column") {
     console.log("ok - inside");
-    $e.run("document/ui/paste", {
+    newElements = $e.run("document/ui/paste", {
       options: {
         rebuild: true
       }
-      //onAfter: refreshTumbnails()
+      //onAfter: (pastedElements)=>{rerenderElements(pastedElements)}
     });
+
   } else {
-    $e.run("document/ui/paste", {
+    console.log("ok - outside");
+    newElements = $e.run("document/ui/paste", {
       container: elementor.getPreviewContainer(),
       at: elementor.getCurrentElement(),
       options: {
         rebuild: true
       }
-      //onAfter: refreshTumbnails()
+      //onAfter: (pastedElements)=>{rerenderElements(pastedElements)}
     });
-    console.log("ok - outside");
+
   }
+  return newElements;
 }
+
+
+// function rerenderElements(pastedElements){
+//   console.log(pastedElements);
+//   var elementView = elementor.getPanelView().getCurrentPageView().getOption('editedElementView');
+//   var viewsToUpdate = {};
+//   viewsToUpdate[elementView.cid] = elementView;
+//   elementor.pastedElements.render();
+// };
 
 function refreshTumbnails() {
   jQuery.ajax({
