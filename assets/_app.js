@@ -174,9 +174,8 @@ function insertElement(udElement, udAction) {
               function() {
                 console.log("==IM manager==:", isFirstTime);
                 if ((udAction || isFirstTime) && foundNodes.length > 0) {
-                  // $e.run("document/history/undo"); //Fast Undo
-                  // udPasteElementorCommand();
-                  elementor.getCurrentElement().render();
+                  $e.run("document/history/undo"); //Fast Undo
+                  udPasteElementorCommand();
                 }
                 foundNodes = [];
               }
